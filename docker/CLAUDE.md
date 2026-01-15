@@ -9,5 +9,4 @@
 |----|------|---|-------|------|
 | #598 | 10:50 AM | 🔴 | Dockerfile.rocm conda activation method fixed | ~267 |
 | #585 | 10:42 AM | 🔄 | CosyVoice Docker Compose configuration updated | ~290 |
-| #584 | " | 🔵 | CosyVoice ROCm Docker configuration analyzed | ~286 |
 </claude-mem-context>

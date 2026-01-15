@@ -7,7 +7,9 @@
 
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
-| #762 | 1:44 PM | ✅ | Git repository modified with ROCm configuration files | ~251 |
+| #765 | 1:45 PM | 🟣 | ROCm support committed to CosyVoice3 repository | ~300 |
+| #763 | 1:44 PM | 🟣 | CosyVoice3 ROCm support implementation staged | ~255 |
+| #762 | " | ✅ | Git repository modified with ROCm configuration files | ~251 |
 | #743 | 1:38 PM | 🔴 | Fixed torchaudio.load compatibility in file_utils.py | ~261 |
 | #742 | " | 🔄 | Added soundfile import to file_utils.py | ~219 |
 | #740 | 1:37 PM | 🔵 | CosyVoice file utilities import torchaudio with soundfile backend | ~279 |
