@@ -18,6 +18,7 @@
 - **Text Normalization**: Supports reading of numbers, special symbols and various text formats without a traditional frontend module.
 - **Bi-Streaming**: Support both text-in streaming and audio-out streaming, and achieves latency as low as 150ms while maintaining high-quality audio output.
 - **Instruct Support**: Supports various instructions such as languages, dialects, emotions, speed, volume, etc.
+- **AMD GPU Support**: Now supports ROCm for AMD GPUs! See [ROCm Setup](#rocm-amd-gpu-support) section for details.
 
 
 ## Roadmap
