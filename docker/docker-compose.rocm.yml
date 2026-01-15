@@ -1,0 +1,82 @@
+services:
+  cosyvoice-rocm:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.rocm
+      args:
+        # You can change this to a specific tag if 'latest' causes issues
+        # e.g., rocm6.2.4_ubuntu22.04_py3.10_pytorch_2.5.1
+        ROCM_VERSION: latest
+    image: cosyvoice-rocm
+    container_name: cosyvoice-rocm
+    hostname: cosyvoice-rocm
+
+    # Critical for ROCm device access
+    devices:
+      - "/dev/kfd:/dev/kfd"
+      - "/dev/dri:/dev/dri"
+
+    # Security options usually needed for GPU access
+    security_opt:
+      - seccomp:unconfined
+
+    # Add to video/render groups
+    group_add:
+      - video
+      - render
+
+    # Shared memory size is critical for large models and unified memory
+    shm_size: '64gb'
+
+    # Capabilities for GPU access
+    cap_add:
+      - SYS_RAWIO
+
+    ports:
+      - "7860:7860"
+
+    volumes:
+      # Mount project directory
+      - ..:/workspace/CosyVoice
+      # Mount pretrained models (using local models)
+      - ../pretrained_models:/workspace/pretrained_models
+      # Cache directories
+      - ~/.cache/modelscope:/root/.cache/modelscope
+      - ~/.cache/huggingface:/root/.cache/huggingface
+
+    environment:
+      # --- ROCm Tuning ---
+      # AMD GPU might need an override if not fully recognized by current ROCm
+      # Try different GFX versions based on your GPU:
+      # - gfx1100 (Navi 21 / RX 6800 series)
+      # - gfx1101 (Navi 22 / RX 6900 series)
+      # -gfx1102 (Navi 23 / RX 7600 series)
+      # - gfx1150 (RDNA 3.5 / Strix Halo base)
+      # - gfx1151 (RDNA 3.5 / Strix Halo with specific features)
+      # Uncomment and adjust if needed:
+      # HSA_OVERRIDE_GFX_VERSION: "gfx1151"
+
+      # Python/Project settings
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/workspace/CosyVoice:/workspace/CosyVoice/third_party/Matcha-TTS
+
+      # Model cache directories
+      - MODELSCOPE_CACHE=/root/.cache/modelscope
+      - HF_HOME=/root/.cache/huggingface
+
+      # Force CPU mode (for testing without GPU)
+      # - CUDA_VISIBLE_DEVICES=
+
+    # Keep container running for debugging
+    # Override command to run webui:
+    # command: python webui.py
+    command: sleep infinity
+
+    # Resource limits (optional, adjust based on your system)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: rocm
+    #           count: 1
+    #           capabilities: [gpu]

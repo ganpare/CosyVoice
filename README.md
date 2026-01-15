@@ -182,6 +182,51 @@ python3 webui.py --port 50000 --model_dir pretrained_models/CosyVoice-300M
 
 For advanced users, we have provided training and inference scripts in `examples/libritts`.
 
+### ROCm (AMD GPU) Support
+
+This repository includes experimental ROCm support for AMD GPUs. The ROCm implementation has been tested with:
+- **GPU**: AMD Radeon Graphics (RDNA 3/Strix Halo)
+- **ROCm Version**: 7.1.1
+- **PyTorch**: 2.9.1+rocm7.1.1
+- **torchaudio**: 2.9.0+rocm7.1.1
+
+#### Docker Setup (Recommended)
+
+The easiest way to run CosyVoice with AMD GPU is using Docker:
+
+```bash
+cd docker
+docker compose -f docker-compose.rocm.yml up --build
+```
+
+The web interface will be available at `http://localhost:7860`
+
+#### Manual Setup
+
+1. Create conda environment and install dependencies:
+```bash
+conda create -n cosyvoice -y python=3.10
+conda activate cosyvoice
+pip install -r requirements-rocm.txt
+```
+
+2. Install ROCm-optimized PyTorch and torchaudio:
+```bash
+pip uninstall -y torch torchvision torchaudio
+pip install 'torch==2.9.1+rocm7.1.1.lw.git351ff442' \
+            'torchaudio==2.9.0+rocm7.1.1.gite3c6ee2b' \
+            --find-links https://repo.radeon.com/rocm/manylinux/rocm-rel-7.1.1/
+```
+
+3. Install pynini for text processing:
+```bash
+conda install -y -c conda-forge pynini==2.1.5
+```
+
+4. Run inference as usual (GPU will be detected automatically)
+
+**Note**: ROCm support is experimental. Performance may vary depending on your GPU model and ROCm version.
+
 #### Build for deployment
 
 Optionally, if you want service deployment,

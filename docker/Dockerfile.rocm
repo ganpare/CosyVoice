@@ -1,0 +1,94 @@
+# Dockerfile for CosyVoice3 ROCm implementation
+# Optimized for AMD GPU (ROCm environment)
+# Based on T5Gemma-TTS ROCm configuration
+# Usage:
+#   docker compose -f docker-compose.rocm.yml up --build
+
+# Use official ROCm PyTorch image
+# Default to latest stable, but allow override
+ARG ROCM_VERSION=latest
+FROM rocm/pytorch:${ROCM_VERSION}
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Use bash login shell for conda commands
+SHELL ["/bin/bash", "-lc"]
+
+WORKDIR /workspace
+
+# Install system dependencies
+RUN apt-get update -y --fix-missing && \
+    apt-get install -y --no-install-recommends \
+    git \
+    build-essential \
+    curl \
+    wget \
+    ffmpeg \
+    unzip \
+    git-lfs \
+    sox \
+    libsox-dev \
+    && apt-get clean && \
+    git lfs install
+
+# Create conda environment (use miniforge for better ROCm compatibility)
+RUN wget --quiet https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O ~/miniforge.sh && \
+    /bin/bash ~/miniforge.sh -b -p /opt/conda && \
+    rm ~/miniforge.sh && \
+    ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh
+
+ENV PATH /opt/conda/bin:$PATH
+
+RUN conda config --add channels conda-forge && \
+    conda config --set channel_priority strict
+
+# Create Python environment
+ARG VENV_NAME="cosyvoice"
+RUN conda create -y -n ${VENV_NAME} python=3.10
+ENV CONDA_DEFAULT_ENV=${VENV_NAME}
+ENV PATH /opt/conda/bin:/opt/conda/envs/${VENV_NAME}/bin:$PATH
+
+# Install pynini for text processing
+RUN source /opt/conda/etc/profile.d/conda.sh && \
+    conda activate ${VENV_NAME} && \
+    conda install -y -c conda-forge pynini==2.1.5
+
+# Set PYTHONPATH
+ENV PYTHONPATH="${PYTHONPATH}:/workspace/CosyVoice:/workspace/CosyVoice/third_party/Matcha-TTS"
+
+# Clone CosyVoice repository
+RUN git clone --recursive https://github.com/FunAudioLLM/CosyVoice.git
+
+# Copy ROCm-specific requirements (without CUDA dependencies)
+COPY requirements-rocm.txt /workspace/CosyVoice/
+
+# Install Python dependencies
+# IMPORTANT: Strip torch/torchaudio/cuda-dependent packages from original requirements
+WORKDIR /workspace/CosyVoice
+RUN source /opt/conda/etc/profile.d/conda.sh && \
+    conda activate cosyvoice && \
+    pip install --upgrade pip && \
+    pip install -r requirements-rocm.txt
+
+# Install ROCm-optimized PyTorch and torchaudio from repo.radeon.com
+# IMPORTANT: Uninstall generic PyTorch first to install ROCm-specific version
+# Use PyTorch 2.9.1 and ROCm-specific torchaudio 2.9.0 for compatibility
+RUN source /opt/conda/etc/profile.d/conda.sh && \
+    conda activate cosyvoice && \
+    pip uninstall -y torch torchvision torchaudio && \
+    pip install 'torch==2.9.1+rocm7.1.1.lw.git351ff442' 'torchaudio==2.9.0+rocm7.1.1.gite3c6ee2b' --find-links https://repo.radeon.com/rocm/manylinux/rocm-rel-7.1.1/
+
+# Create cache directory
+RUN mkdir -p /workspace/.cache/modelscope
+
+# Expose Gradio port
+EXPOSE 7860
+
+# Default command (can be overridden in docker-compose)
+CMD ["python", "webui.py"]
